@@ -1,0 +1,8 @@
+*
+!*.do
+!*.vhd
+!*.sdc
+!*.gitignore
+!*.asm
+!*.v
+!*.xlsx
