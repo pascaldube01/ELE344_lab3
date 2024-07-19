@@ -73,7 +73,7 @@ SIGNAL ID_MemtoReg          : std_logic;
 SIGNAL ID_MemWrite          : std_logic;
 SIGNAL ID_MemRead           : std_logic;
 SIGNAL ID_Branch            : std_logic;
-SIGNAL ID_AluSrc            : std_logic
+SIGNAL ID_AluSrc            : std_logic;
 SIGNAL ID_RegDst            : std_logic;
 SIGNAL ID_RegWrite          : std_logic;
 SIGNAL ID_AluControl        : std_logic_vector(4 DOWNTO 0);
@@ -121,7 +121,7 @@ SIGNAL MEM_WB_AluResult     : std_logic_vector(31 DOWNTO 0);
 SIGNAL MEM_WB_readdata      : std_logic_vector(31 DOWNTO 0);
 SIGNAL MEM_WB_instruction   : std_logic_vector(31 DOWNTO 0);
 
-
+begin
 
 
 
@@ -133,29 +133,32 @@ SIGNAL MEM_WB_instruction   : std_logic_vector(31 DOWNTO 0);
 
 
 ----------unite d'envoi-----------
---encodeur de priorite
-
-
 --sortie A
-if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg = not("000000")) and (EX_MEM_WriteReg = ID_EX_rd)) then
-	ForwardA = "10";
-elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg = not("000000") and (MEM_WB_WriteReg = ID/EX.RegisterRs))
-ForwardA = "01"
 
+sortieA : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rs, MEM_WB_RegWrite, MEM_WB_WriteReg, ID_EX_rs)
+begin
+	if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg and ("000000")) and (EX_MEM_WriteReg = ID_EX_rs)) then
+		EX_ForwardA <= "1X";
+	elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg and ("000000") and (MEM_WB_WriteReg = ID_EX_rs))) then
+		EX_ForwardA <= "01";
+	else 
+		EX_ForwardA <= "00";
+	end if;
+end process;
 
 
 --sortie B
-if (EX/MEM.RegWrite = '1' and (EX/MEM.RegisterRd =not (0)) and (EX/MEM.RegisterRd = ID/EX.RegisterRt))
-ForwardB = "10"
-if (MEM/WB.RegWrite and (MEM/WB.RegisterRd = not ("0"))
-and (MEM/WB.RegisterRd = ID/EX.RegisterRt))
-ForwardB = "01"
-
-
-
-
-
+sortieB : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rt, MEM_WB_RegWrite, MEM_WB_WriteReg, ID_EX_rt)
 begin
+	if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg =not ("00000")) and (EX_MEM_WriteReg = ID_EX_rt)) then
+		EX_ForwardB <= "1X";
+	elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg = not ("0"))and (MEM_WB_WriteReg = ID_EX_rt)) then
+		EX_ForwardB <= "01";
+	else 
+		EX_ForwardB <= "00";
+	end if;
+end process;
+
 
 registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
 port map(
