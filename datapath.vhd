@@ -63,9 +63,9 @@ SIGNAL IF_ID_PCPlus4        : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_ID_Instruction    : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_PCJump            : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_SignImm           : std_logic_vector(31 DOWNTO 0);
-SIGNAL ID_rs                : std_logic_vector(6 DOWNTO 0);
-SIGNAL ID_rt                : std_logic_vector(5 DOWNTO 0);
-SIGNAL ID_rd                : std_logic_vector(5 DOWNTO 0);
+SIGNAL ID_rs                : std_logic_vector(4 DOWNTO 0);
+SIGNAL ID_rt                : std_logic_vector(4 DOWNTO 0);
+SIGNAL ID_rd                : std_logic_vector(4 DOWNTO 0);
 SIGNAL ID_rd1               : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_rd2               : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_Jump              : std_logic;
@@ -90,9 +90,9 @@ SIGNAL EX_Zero              : std_logic;
 SIGNAL ID_EX_AluSrc         : std_logic;
 SIGNAL ID_EX_RegDst         : std_logic;
 SIGNAL ID_EX_AluControl     : std_logic;
-SIGNAL EX_WriteReg          : std_logic_vector(5 DOWNTO 0); 
+SIGNAL EX_WriteReg          : std_logic_vector(4 DOWNTO 0); 
 SIGNAL ID_EX_rt             : std_logic_vector(4 DOWNTO 0);
-SIGNAL ID_EX_rs             : std_logic_vector(5 DOWNTO 0); 
+SIGNAL ID_EX_rs             : std_logic_vector(4 DOWNTO 0); 
 SIGNAL ID_EX_rd1            : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_EX_Branch         : std_logic;
 SIGNAL EX_cout              : std_logic;
@@ -101,7 +101,7 @@ SIGNAL ID_EX_MemRead        : std_logic;
 SIGNAL ID_EX_RegWrite       : std_logic;
 SIGNAL ID_EX_MemtoReg       : std_logic;
 SIGNAL ID_EX_SignImm        : std_logic_vector(31 DOWNTO 0);
-SIGNAL ID_EX_rd             : std_logic_vector(5 DOWNTO 0);
+SIGNAL ID_EX_rd             : std_logic_vector(4 DOWNTO 0);
 SIGNAL ID_EX_rd2            : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_EX_PCPlus4        : std_logic_vector(31 DOWNTO 0);
 SIGNAL ID_EX_instruction    : std_logic_vector(31 DOWNTO 0);
@@ -111,10 +111,10 @@ SIGNAL EX_MEM_MemRead       : std_logic;
 SIGNAL EX_MEM_MemtoReg      : std_logic;
 SIGNAL EX_MEM_RegWrite      : std_logic;
 SIGNAL EX_MEM_preSrcB       : std_logic_vector(31 DOWNTO 0);
-SIGNAL EX_MEM_WriteReg      : std_logic_vector(5 DOWNTO 0); 
+SIGNAL EX_MEM_WriteReg      : std_logic_vector(4 DOWNTO 0); 
 SIGNAL EX_MEM_instruction   : std_logic_vector(31 DOWNTO 0);
 SIGNAL WB_Result            : std_logic_vector(31 DOWNTO 0);
-SIGNAL MEM_WB_WriteReg      : std_logic_vector(5 DOWNTO 0);
+SIGNAL MEM_WB_WriteReg      : std_logic_vector(4 DOWNTO 0);
 SIGNAL MEM_WB_MemtoReg      : std_logic;
 SIGNAL MEM_WB_RegWrite      : std_logic;
 SIGNAL MEM_WB_AluResult     : std_logic_vector(31 DOWNTO 0);
@@ -135,11 +135,11 @@ begin
 ----------unite d'envoi-----------
 --sortie A
 
-sortieA : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rs, MEM_WB_RegWrite, MEM_WB_WriteReg, ID_EX_rs)
+sortieA : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rs, MEM_WB_RegWrite, MEM_WB_WriteReg)
 begin
-	if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg and ("000000")) and (EX_MEM_WriteReg = ID_EX_rs)) then
+	if ((EX_MEM_RegWrite = '1') and (EX_MEM_WriteReg /= "00000") and (EX_MEM_WriteReg = ID_EX_rs)) then
 		EX_ForwardA <= "1X";
-	elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg and ("000000") and (MEM_WB_WriteReg = ID_EX_rs))) then
+	elsif ((MEM_WB_RegWrite = '1') and (MEM_WB_WriteReg /= "00000") and (MEM_WB_WriteReg = ID_EX_rs)) then
 		EX_ForwardA <= "01";
 	else 
 		EX_ForwardA <= "00";
@@ -148,11 +148,11 @@ end process;
 
 
 --sortie B
-sortieB : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rt, MEM_WB_RegWrite, MEM_WB_WriteReg, ID_EX_rt)
+sortieB : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rt, MEM_WB_RegWrite, MEM_WB_WriteReg)
 begin
-	if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg =not ("00000")) and (EX_MEM_WriteReg = ID_EX_rt)) then
+	if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg /="00000") and (EX_MEM_WriteReg = ID_EX_rt)) then
 		EX_ForwardB <= "1X";
-	elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg = not ("0"))and (MEM_WB_WriteReg = ID_EX_rt)) then
+	elsif (MEM_WB_RegWrite = '1' and (MEM_WB_WriteReg /= "00000")and (MEM_WB_WriteReg = ID_EX_rt)) then
 		EX_ForwardB <= "01";
 	else 
 		EX_ForwardB <= "00";
