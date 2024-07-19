@@ -52,6 +52,109 @@ signal pcNextBr:std_logic_vector(31 DOWNTO 0);
 signal pcNext:std_logic_vector(31 DOWNTO 0);
 signal signal_pc:std_logic_vector(31 downto 0);
 
+
+
+--------------- signaux pour le pipelilne ----------
+SIGNAL IF_PCNextBr          : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_PCNext            : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_PC                : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_PCPlus4           : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_ID_PCPlus4        : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_ID_Instruction    : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_PCJump            : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_SignImm           : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_rs                : std_logic_vector(6 DOWNTO 0);
+SIGNAL ID_rt                : std_logic_vector(5 DOWNTO 0);
+SIGNAL ID_rd                : std_logic_vector(5 DOWNTO 0);
+SIGNAL ID_rd1               : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_rd2               : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_Jump              : std_logic;
+SIGNAL ID_MemtoReg          : std_logic;
+SIGNAL ID_MemWrite          : std_logic;
+SIGNAL ID_MemRead           : std_logic;
+SIGNAL ID_Branch            : std_logic;
+SIGNAL ID_AluSrc            : std_logic
+SIGNAL ID_RegDst            : std_logic;
+SIGNAL ID_RegWrite          : std_logic;
+SIGNAL ID_AluControl        : std_logic_vector(4 DOWNTO 0);
+SIGNAL EX_PCBranch          : std_logic;
+SIGNAL EX_PCSrc             : std_logic;
+SIGNAL EX_SignImmSh         : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_ForwardA          : std_logic_vector(1 DOWNTO 0);
+SIGNAL EX_ForwardB          : std_logic_vector(1 DOWNTO 0);
+SIGNAL EX_preSrcB           : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_SrcB              : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_SrcA              : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_AluResult         : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_Zero              : std_logic;
+SIGNAL ID_EX_AluSrc         : std_logic;
+SIGNAL ID_EX_RegDst         : std_logic;
+SIGNAL ID_EX_AluControl     : std_logic;
+SIGNAL EX_WriteReg          : std_logic_vector(5 DOWNTO 0); 
+SIGNAL ID_EX_rt             : std_logic_vector(4 DOWNTO 0);
+SIGNAL ID_EX_rs             : std_logic_vector(5 DOWNTO 0); 
+SIGNAL ID_EX_rd1            : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_EX_Branch         : std_logic;
+SIGNAL EX_cout              : std_logic;
+SIGNAL ID_EX_MemWrite       : std_logic;
+SIGNAL ID_EX_MemRead        : std_logic;
+SIGNAL ID_EX_RegWrite       : std_logic;
+SIGNAL ID_EX_MemtoReg       : std_logic;
+SIGNAL ID_EX_SignImm        : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_EX_rd             : std_logic_vector(5 DOWNTO 0);
+SIGNAL ID_EX_rd2            : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_EX_PCPlus4        : std_logic_vector(31 DOWNTO 0);
+SIGNAL ID_EX_instruction    : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_MEM_AluResult     : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_MEM_MemWrite      : std_logic;
+SIGNAL EX_MEM_MemRead       : std_logic;
+SIGNAL EX_MEM_MemtoReg      : std_logic;
+SIGNAL EX_MEM_RegWrite      : std_logic;
+SIGNAL EX_MEM_preSrcB       : std_logic_vector(31 DOWNTO 0);
+SIGNAL EX_MEM_WriteReg      : std_logic_vector(5 DOWNTO 0); 
+SIGNAL EX_MEM_instruction   : std_logic_vector(31 DOWNTO 0);
+SIGNAL WB_Result            : std_logic_vector(31 DOWNTO 0);
+SIGNAL MEM_WB_WriteReg      : std_logic_vector(5 DOWNTO 0);
+SIGNAL MEM_WB_MemtoReg      : std_logic;
+SIGNAL MEM_WB_RegWrite      : std_logic;
+SIGNAL MEM_WB_AluResult     : std_logic_vector(31 DOWNTO 0);
+SIGNAL MEM_WB_readdata      : std_logic_vector(31 DOWNTO 0);
+SIGNAL MEM_WB_instruction   : std_logic_vector(31 DOWNTO 0);
+
+
+
+
+
+
+
+
+
+
+
+
+----------unite d'envoi-----------
+--encodeur de priorite
+
+
+--sortie A
+if (EX_MEM_RegWrite = '1' and (EX_MEM_WriteReg = not("000000")) and (EX_MEM_WriteReg = ID_EX_rd)) then
+	ForwardA = "10";
+elsif (MEM_WB_RegWrite and (MEM_WB_WriteReg = not("000000") and (MEM_WB_WriteReg = ID/EX.RegisterRs))
+ForwardA = "01"
+
+
+
+--sortie B
+if (EX/MEM.RegWrite = '1' and (EX/MEM.RegisterRd =not (0)) and (EX/MEM.RegisterRd = ID/EX.RegisterRt))
+ForwardB = "10"
+if (MEM/WB.RegWrite and (MEM/WB.RegisterRd = not ("0"))
+and (MEM/WB.RegisterRd = ID/EX.RegisterRt))
+ForwardB = "01"
+
+
+
+
+
 begin
 
 registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
@@ -128,6 +231,7 @@ begin
 		signal_pc<=pcNext;  
 	end if;
 end process;
+
 
 
 
