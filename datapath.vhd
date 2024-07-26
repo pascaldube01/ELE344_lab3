@@ -304,7 +304,20 @@ end process;
 
 
 
-
+-- mise des signaux en entree vers leurs signaux interne respectifs
+--vers IF
+ID_Jump <= Jump;
+--vers EX
+ID_Branch <= Branch;
+ID_AluSrc <= AluSrc;
+ID_AluControl <= AluControl
+ID_RegDst <= regDst;
+--vers MEM
+ID_MemWrite <= MemWriteIn;
+ID_MemRead <= MemReadIn;
+--vers WB
+ID_MemtoReg <= MemtoReg;
+ID_RegWrite <= regWrite;
 
 
 
@@ -318,20 +331,14 @@ process(clock)
 begin
 	if rising_edge(clock) then 
 	--controlleur vers EX
+	--controlleur vers MEM
+	--controlleur vers WB
 	end if;
 end process;
 
 
 
--- mise des signaux en entree vers leurs signaux interne respectifs
-ID_Jump <= Jump;
-ID_MemtoReg <= MemtoReg;
-ID_MemWrite <= MemWriteIn;
-ID_MemRead <= MemReadIn;
-ID_Branch <= Branch;
-ID_AluSrc <= AluSrc;
-ID_RegDst <= regDst;
-ID_RegWrite <= regWrite;
+
 
 
 ----------------------------------------------------------------------
