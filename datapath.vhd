@@ -19,8 +19,10 @@ use work.all;
 
 entity datapath is
     port(
-        clock,Reset,MemtoReg,Branch,AluSrc,RegDst,
-		  RegWrite,Jump,MemReadIn,MemWriteIn: in std_logic;
+        clock,Reset,
+        
+        MemtoReg,Branch,AluSrc,RegDst,
+		RegWrite,Jump,MemReadIn,MemWriteIn: in std_logic;
         AluControl : in std_logic_vector(3 downto 0);
         
         Instruction,ReadData : in std_logic_vector(31 downto 0);
@@ -134,12 +136,12 @@ registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de reg
 port map(
 	clk=>clock,
 	we=>RegWrite,
-	ra1=>Instruction(25 downto 21),
-	ra2=>Instruction(20 downto 16),
-	wa=>reg_wa,
-	wd=>resultat,
-	rd1=>ual_srcA,
-	rd2=>reg_rd2
+	ra1=>ID_rs,
+	ra2=>ID_rt,
+	wa=>MEM_WB_WriteReg,
+	wd=>WB_Result,
+	rd1=>ID_rd1,
+	rd2=>ID_rd2
 );
 
 operation : ENTITY work.UAL(rtl)--création de l'entité ual
@@ -224,6 +226,35 @@ begin
 		resultat<=ual_result;
 	end if;
 end process;
+
+
+
+
+
+
+
+
+
+
+
+--------etages de pipeline----------
+
+
+----------------------------------------------------------------------
+----------------------- IF --------------------------------------------
+----------------------------------------------------------------------
+
+
+--loqique du PC
+IF_PCPlus4<=std_logic_vector(unsigned( IF_PC ) + 4); --incrementation de PC
+ID_PCJump<=(IF_ID_PCPlus4(31 downto 28) & (IF_ID_Instruction(25 downto 0) & "00")); --addresse de saut
+EX_pcSrc<=Branch AND  ual_zero; --selection de la source
+EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
+
+
+
+
+
 ------------mux du choix branch ou pc+4
 process(EX_PCSrc,EX_PCBranch,IF_PCPlus4)
 begin
@@ -246,18 +277,18 @@ end process;
 
 
 
+----------------------------------------------------------------------
+----------------------- ID --------------------------------------------
+----------------------------------------------------------------------
 
 
+--logique combinatoire
 
+ID_rs <= IF_ID_Instruction(25 DOWNTO 21);
+ID_rt <= IF_ID_Instruction(20 DOWNTO 16);
+ID_rd <= IF_ID_Instruction(15 DOWNTO 11);
 
-
-
---------etages de pipeline----------
--- ID
-
---loqique du PC
-IF_PCPlus4<=std_logic_vector(unsigned( IF_PC ) + 4); --incrementation de PC
-ID_PCJump<=(IF_ID_PCPlus4(31 downto 28) & (IF_ID_Instruction(25 downto 0) & "00")); --addresse de saut
+ID_SignImm<=std_logic_vector(resize(signed(IF_ID_Instruction(15 downto 0)), 32)); --extension de signe de valeur immediate
 
 
 
@@ -271,9 +302,6 @@ begin
 end process;
 
 
-ID_rs <= IF_ID_Instruction(25 DOWNTO 21);
-ID_rt <= IF_ID_Instruction(20 DOWNTO 16);
-ID_rd <= IF_ID_Instruction(15 DOWNTO 11);
 
 
 
@@ -281,20 +309,34 @@ ID_rd <= IF_ID_Instruction(15 DOWNTO 11);
 
 
 
--- EX
+
+----------------------------------------------------------------------
+----------------------- EX --------------------------------------------
+----------------------------------------------------------------------
 --registre de transfer ID_EX
 process(clock)
 begin
 	if rising_edge(clock) then 
+	--controlleur vers EX
 	end if;
 end process;
 
---logique combinatoire
-EX_pcSrc<=Branch AND  ual_zero; --selection de la source
-EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
 
 
--- MEM
+-- mise des signaux en entree vers leurs signaux interne respectifs
+ID_Jump <= Jump;
+ID_MemtoReg <= MemtoReg;
+ID_MemWrite <= MemWriteIn;
+ID_MemRead <= MemReadIn;
+ID_Branch <= Branch;
+ID_AluSrc <= AluSrc;
+ID_RegDst <= regDst;
+ID_RegWrite <= regWrite;
+
+
+----------------------------------------------------------------------
+----------------------- MEM --------------------------------------------
+----------------------------------------------------------------------
 --registre de transfer EX_MEM
 process(clock)
 begin
@@ -302,7 +344,9 @@ begin
 	end if;
 end process;
 
--- WB
+----------------------------------------------------------------------
+----------------------- WB --------------------------------------------
+----------------------------------------------------------------------
 --registre de transfer MEM_WB
 process(clock)
 begin
@@ -329,7 +373,7 @@ end process;
 
 
 
-signImm<=std_logic_vector(resize(signed(instruction(15 downto 0)), 32)); --extension de signe de valeur immediate
+
 
 ------------- opérations combinatoire pour le PC
  --addresse de branchement
