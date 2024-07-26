@@ -34,21 +34,6 @@ entity datapath is
 end entity;
 
 architecture datapath_Arc of datapath is
--------------------- signaux internes de l'ual
-signal  ual_srcA :   std_logic_vector(31 DOWNTO 0);
-signal  ual_srcB :   std_logic_vector(31 DOWNTO 0);
-signal  ual_result:  std_logic_vector(31 DOWNTO 0);
-signal  ual_zero :   std_logic;
------------- signaux internes autour du banc de registrer
-signal reg_wa:std_logic_vector(4 DOWNTO 0);--writeAdress
-signal resultat:std_logic_vector(31 DOWNTO 0);
-signal reg_rd2:std_logic_vector(31 DOWNTO 0);--read data 2
--------------- signaux internes  pour le jump et branch
-signal signImm:std_logic_vector(31 DOWNTO 0);
-signal pcJump:std_logic_vector(31 DOWNTO 0);
-signal signImmSh:std_logic_vector(31 DOWNTO 0);
-signal pcBranch: std_logic_vector(31 DOWNTO 0);
-signal pcSrc:std_logic;
 
 
 
@@ -134,23 +119,23 @@ begin
 -------------- autres parties du processeur ----------------
 registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
 port map(
-	clk=>clock,
-	we=>RegWrite,
-	ra1=>ID_rs,
-	ra2=>ID_rt,
-	wa=>MEM_WB_WriteReg,
-	wd=>WB_Result,
-	rd1=>ID_rd1,
-	rd2=>ID_rd2
+	clk => clock,
+	we => RegWrite,
+	ra1 => ID_rs,
+	ra2 => ID_rt,
+	wa => MEM_WB_WriteReg,
+	wd => WB_Result,
+	rd1 => ID_rd1,
+	rd2 => ID_rd2
 );
 
 operation : ENTITY work.UAL(rtl)--création de l'entité ual
 port map(
-	ualControl=>AluControl,
-	srcA=>ual_srcA, 
-	srcB=>ual_srcB, 
-	result=>ual_result,
-	zero=>ual_zero	
+	ualControl => ID_EX_AluControl,
+	srcA => EX_srcA, 
+	srcB => EX_srcB, 
+	result => EX_AluResult,
+	zero => EX_Zero
 );
 
 
@@ -219,8 +204,8 @@ end process;
 --loqique du PC
 IF_PCPlus4<=std_logic_vector(unsigned( IF_PC ) + 4); --incrementation de PC
 ID_PCJump<=(IF_ID_PCPlus4(31 downto 28) & (IF_ID_Instruction(25 downto 0) & "00")); --addresse de saut
-EX_pcSrc<=Branch AND  ual_zero; --selection de la source
-EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
+EX_pcSrc<=Branch AND  EX_Zero; --selection de la source
+EX_PCBranch<=std_logic_vector(unsigned( ID_EX_PCPlus4 ) + unsigned(EX_SignImmSh));
 
 
 
@@ -323,18 +308,18 @@ begin
 		ID_EX_rd1<=ID_rd1;
 		ID_EX_rd2<=ID_rd2;
 		
-		ID_EX_SignImm<=ID_SignImm;
+		ID_EX_SignImm <= ID_SignImm;
 		ID_EX_rs<=ID_rs;
 		ID_EX_rt<=ID_rt;
 		ID_EX_rd<=ID_rd;
+		
+		ID_EX_instruction <= IF_ID_Instruction;
 	end if;
 end process;
 
 
 --logique combinatoire
 EX_SignImmSh <= std_logic_vector(resize(unsigned(ID_EX_SignImm),30)) & "00";
-EX_pcSrc<=Branch AND  ual_zero; --selection de la source
-EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
 
 --------mux forwardA ----------
 process(EX_forwardA, WB_Result, ID_EX_rd1, EX_MEM_AluResult)
@@ -371,9 +356,9 @@ end process;
 process(ID_EX_AluSrc,ID_EX_SignImm, EX_preSrcB)
 begin
 	if AluSrc ='1' then
-		ual_srcB<=ID_EX_SignImm;
+		EX_SrcB<=ID_EX_SignImm;
 	else
-		ual_srcB<=EX_preSrcB;
+		EX_SrcB<=EX_preSrcB;
 	end if;
 end process;
 
@@ -403,6 +388,8 @@ begin
 		EX_MEM_MemWrite<=ID_EX_MemWrite;
 		EX_MEM_preSrcB <= EX_preSrcB;
 		ID_EX_Branch<=ID_Branch;
+		
+		EX_MEM_instruction <= ID_EX_Instruction;
 	end if;
 end process;
 
@@ -419,7 +406,7 @@ begin
 	MEM_WB_WriteReg<=EX_MEM_WriteReg;
 	MEM_WB_readdata<=readData;
 	
-	
+	MEM_WB_instruction <= EX_MEM_instruction;
 	end if;
 end process;
 
@@ -454,11 +441,17 @@ end process;
 
 
 --signaux vers d'autres parties du CPU (sorties)
-MemReadOut<=MemReadIn;
-MemWriteOut<=MemWriteIn;
+MemReadOut <= MemReadIn;
+MemWriteOut <= MemWriteIn;
 pc<= "00" & IF_PC(31 downto 2);
-AluResult<=ual_result;
-WriteData<=reg_rd2;
+AluResult <= EX_MEM_AluResult;
+WriteData<= EX_MEM_preSrcB;
 IF_ID_Instruction_out <= IF_ID_Instruction;
+
+
+
+
+
+
 
 end architecture;
