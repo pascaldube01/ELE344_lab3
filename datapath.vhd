@@ -43,18 +43,15 @@ signal resultat:std_logic_vector(31 DOWNTO 0);
 signal reg_rd2:std_logic_vector(31 DOWNTO 0);--read data 2
 -------------- signaux internes  pour le jump et branch
 signal signImm:std_logic_vector(31 DOWNTO 0);
-signal pcPlus4:std_logic_vector(31 DOWNTO 0);
 signal pcJump:std_logic_vector(31 DOWNTO 0);
 signal signImmSh:std_logic_vector(31 DOWNTO 0);
 signal pcBranch: std_logic_vector(31 DOWNTO 0);
 signal pcSrc:std_logic;
-signal pcNext:std_logic_vector(31 DOWNTO 0);
-signal signal_pc:std_logic_vector(31 downto 0);
 
 
 
 --------------- signaux pour le pipelilne ----------
-SIGNAL IF_PCNextBr          : std_logic_vector(31 DOWNTO 0); --
+SIGNAL IF_PCNextBr          : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_PCNext            : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_PC                : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_PCPlus4           : std_logic_vector(31 DOWNTO 0);
@@ -76,7 +73,7 @@ SIGNAL ID_AluSrc            : std_logic;
 SIGNAL ID_RegDst            : std_logic;
 SIGNAL ID_RegWrite          : std_logic;
 SIGNAL ID_AluControl        : std_logic_vector(4 DOWNTO 0);
-SIGNAL EX_PCBranch          : std_logic;
+SIGNAL EX_PCBranch          : std_logic_vector(31 DOWNTO 0);
 SIGNAL EX_PCSrc             : std_logic;
 SIGNAL EX_SignImmSh         : std_logic_vector(31 DOWNTO 0);
 SIGNAL EX_ForwardA          : std_logic_vector(1 DOWNTO 0);
@@ -131,6 +128,35 @@ begin
 
 
 
+
+-------------- autres parties du processeur ----------------
+registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
+port map(
+	clk=>clock,
+	we=>RegWrite,
+	ra1=>Instruction(25 downto 21),
+	ra2=>Instruction(20 downto 16),
+	wa=>reg_wa,
+	wd=>resultat,
+	rd1=>ual_srcA,
+	rd2=>reg_rd2
+);
+
+operation : ENTITY work.UAL(rtl)--création de l'entité ual
+port map(
+	ualControl=>AluControl,
+	srcA=>ual_srcA, 
+	srcB=>ual_srcB, 
+	result=>ual_result,
+	zero=>ual_zero	
+);
+
+
+
+
+
+
+
 ----------unite d'envoi-----------
 --sortie A
 
@@ -168,31 +194,6 @@ end process;
 
 
 
--------------- autres parties du processeur ----------------
-registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
-port map(
-	clk=>clock,
-	we=>RegWrite,
-	ra1=>Instruction(25 downto 21),
-	ra2=>Instruction(20 downto 16),
-	wa=>reg_wa,
-	wd=>resultat,
-	rd1=>ual_srcA,
-	rd2=>reg_rd2
-);
-
-operation : ENTITY work.UAL(rtl)--création de l'entité ual
-port map(
-	ualControl=>AluControl,
-	srcA=>ual_srcA, 
-	srcB=>ual_srcB, 
-	result=>ual_result,
-	zero=>ual_zero	
-);
-
-
-
-
 
 ------------mux----------------------
 
@@ -224,21 +225,21 @@ begin
 	end if;
 end process;
 ------------mux du choix branch ou pc+4
-process(pcSrc,pcBranch,pcPlus4)
+process(EX_PCSrc,EX_PCBranch,IF_PCPlus4)
 begin
-	if pcSrc ='1' then
-		IF_PCNextBr <=pcBranch;
+	if EX_PCSrc ='1' then
+		IF_PCNextBr <= EX_PCBranch;
 	else
-		IF_PCNextBr <=pcPlus4;
+		IF_PCNextBr <= IF_PCPlus4;
 	end if;
 end process;
 ------------- mux du choix entre adresse pc de jump ou pc next branch
-process(Jump,pcJump, IF_PCNextBr )
+process(ID_Jump,ID_PCJump, IF_PCNextBr )
 begin
 	if Jump ='1' then
-		pcNext<=pcJump;
+		IF_PCNext<=ID_PCJump;
 	else
-		pcNext<=IF_PCNextBr ;
+		IF_PCNext<=IF_PCNextBr ;
 	end if;
 end process;
 
@@ -251,12 +252,63 @@ end process;
 
 
 
---------registres inter-etages----------
--- IF_ID
--- ID_EX
--- EX_MEM
--- MEM_WB
+--------etages de pipeline----------
+-- ID
 
+--loqique du PC
+IF_PCPlus4<=std_logic_vector(unsigned( IF_PC ) + 4); --incrementation de PC
+ID_PCJump<=(IF_ID_PCPlus4(31 downto 28) & (IF_ID_Instruction(25 downto 0) & "00")); --addresse de saut
+
+
+
+--registre de transfer IF_ID
+process(clock)
+begin
+	if rising_edge(clock) then 
+	IF_ID_PCPlus4 <= IF_PCPlus4;
+	IF_ID_Instruction <=Instruction;
+	end if;
+end process;
+
+
+ID_rs <= IF_ID_Instruction(25 DOWNTO 21);
+ID_rt <= IF_ID_Instruction(20 DOWNTO 16);
+ID_rd <= IF_ID_Instruction(15 DOWNTO 11);
+
+
+
+
+
+
+
+-- EX
+--registre de transfer ID_EX
+process(clock)
+begin
+	if rising_edge(clock) then 
+	end if;
+end process;
+
+--logique combinatoire
+EX_pcSrc<=Branch AND  ual_zero; --selection de la source
+EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
+
+
+-- MEM
+--registre de transfer EX_MEM
+process(clock)
+begin
+	if rising_edge(clock) then 
+	end if;
+end process;
+
+-- WB
+--registre de transfer MEM_WB
+process(clock)
+begin
+	if rising_edge(clock) then 
+	end if;
+end process;
 
 
 
@@ -267,9 +319,9 @@ end process;
 process(clock,reset)
 begin
 	if reset = '1' then
-		signal_pc <=(others => '0');  
+		IF_PC <=(others => '0');  
 	elsif rising_edge(clock) then
-		signal_pc<=pcNext;  
+		IF_PC<=IF_PCNext;  
 	end if;
 end process;
 
@@ -280,10 +332,8 @@ end process;
 signImm<=std_logic_vector(resize(signed(instruction(15 downto 0)), 32)); --extension de signe de valeur immediate
 
 ------------- opérations combinatoire pour le PC
-pcSrc<=Branch AND  ual_zero; --selection de la source
-pcPlus4<=std_logic_vector(unsigned( signal_pc ) + 4); --incrementation de PC
-pcBranch<=std_logic_vector(unsigned( pcPlus4 ) + unsigned(signImmSh)); --addresse de branchement
-pcJump<=(pcPlus4(31 downto 28) & (instruction(25 downto 0) & "00")); --addresse de saut
+ --addresse de branchement
+
 signImmSh<=std_logic_vector(resize(unsigned(signImm), 30)) &"00"; --offset de l'addresse (pour branchement)
 
 
@@ -292,7 +342,7 @@ signImmSh<=std_logic_vector(resize(unsigned(signImm), 30)) &"00"; --offset de l'
 --signaux vers d'autres parties du CPU (sorties)
 MemReadOut<=MemReadIn;
 MemWriteOut<=MemWriteIn;
-pc<= "00" & signal_pc(31 downto 2);
+pc<= "00" & IF_PC(31 downto 2);
 AluResult<=ual_result;
 WriteData<=reg_rd2;
 
