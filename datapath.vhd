@@ -27,7 +27,9 @@ entity datapath is
 		  
         MemReadOut,MemWriteOut : out std_logic;
       
-        PC,AluResult,WriteData : out std_logic_vector(31 downto 0)
+        IF_ID_Instruction_out,PC,AluResult,WriteData : out std_logic_vector(31 downto 0)
+        
+        
     );
 end entity;
 
@@ -72,7 +74,7 @@ SIGNAL ID_Branch            : std_logic;
 SIGNAL ID_AluSrc            : std_logic;
 SIGNAL ID_RegDst            : std_logic;
 SIGNAL ID_RegWrite          : std_logic;
-SIGNAL ID_AluControl        : std_logic_vector(4 DOWNTO 0);
+SIGNAL ID_AluControl        : std_logic_vector(3 DOWNTO 0);
 SIGNAL EX_PCBranch          : std_logic_vector(31 DOWNTO 0);
 SIGNAL EX_PCSrc             : std_logic;
 SIGNAL EX_SignImmSh         : std_logic_vector(31 DOWNTO 0);
@@ -85,7 +87,7 @@ SIGNAL EX_AluResult         : std_logic_vector(31 DOWNTO 0);
 SIGNAL EX_Zero              : std_logic;
 SIGNAL ID_EX_AluSrc         : std_logic;
 SIGNAL ID_EX_RegDst         : std_logic;
-SIGNAL ID_EX_AluControl     : std_logic;
+SIGNAL ID_EX_AluControl     : std_logic_vector(3 DOWNTO 0);
 SIGNAL EX_WriteReg          : std_logic_vector(4 DOWNTO 0); 
 SIGNAL ID_EX_rt             : std_logic_vector(4 DOWNTO 0);
 SIGNAL ID_EX_rs             : std_logic_vector(4 DOWNTO 0); 
@@ -279,7 +281,7 @@ ID_Jump <= Jump;
 --vers EX
 ID_Branch <= Branch;
 ID_AluSrc <= AluSrc;
-ID_AluControl <= AluControl
+ID_AluControl <= AluControl;
 ID_RegDst <= regDst;
 --vers MEM
 ID_MemWrite <= MemWriteIn;
@@ -309,7 +311,7 @@ begin
 		ID_EX_RegDst <=ID_RegDst;
 		--vers MEM
 		ID_EX_memWrite <= ID_MemWrite;
-		ID_EX <= memRead <= ID_MemRead;
+		ID_EX_MemRead <= ID_MemRead;
 		--vers WB
 		ID_EX_memToReg <= ID_MemtoReg;
 		ID_EX_RegWrite <= ID_RegWrite;
@@ -330,12 +332,13 @@ end process;
 
 
 --logique combinatoire
-EX_SignImmSh<=ID_EX_SignImm &&'00';
+EX_SignImmSh <= std_logic_vector(resize(unsigned(ID_EX_SignImm),30)) & "00";
 EX_pcSrc<=Branch AND  ual_zero; --selection de la source
 EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
 
 --------mux forwardA ----------
 process(EX_forwardA, WB_Result, ID_EX_rd1, EX_MEM_AluResult)
+	begin
 	if(EX_forwardA = "10") then
 		EX_SrcA <= EX_MEM_AluResult;
 	elsif(EX_forwardA = "01") then
@@ -349,6 +352,7 @@ end process;
 
 --------mux forwardB ----------
 process(EX_forwardB, WB_Result, ID_EX_rd2, EX_MEM_AluResult)
+	begin
 	if(EX_forwardB = "10") then
 		EX_preSrcB <= EX_MEM_AluResult;
 	elsif(EX_forwardB = "01") then
@@ -398,7 +402,7 @@ begin
 		EX_MEM_MemRead<=ID_EX_MemRead;
 		EX_MEM_MemWrite<=ID_EX_MemWrite;
 		EX_MEM_preSrcB <= EX_preSrcB;
-		ID_EX_Branch<=ID_Branch
+		ID_EX_Branch<=ID_Branch;
 	end if;
 end process;
 
@@ -421,7 +425,7 @@ end process;
 
 process(MEM_WB_readdata,MEM_WB_AluResult,MEM_WB_MemtoReg)
 	begin
-	if (MEM_WB_MemtoReg=='1') then
+	if (MEM_WB_MemtoReg ='1') then
 	WB_Result<=MEM_WB_readdata;
 	else
 	WB_Result<=MEM_WB_AluResult;
@@ -455,5 +459,6 @@ MemWriteOut<=MemWriteIn;
 pc<= "00" & IF_PC(31 downto 2);
 AluResult<=ual_result;
 WriteData<=reg_rd2;
+IF_ID_Instruction_out <= IF_ID_Instruction;
 
 end architecture;

@@ -30,7 +30,7 @@ end mips;
 
 architecture cpu of mips is
 
-		  signal IF_ID_Instructions :std_logic_vector (31 downto 0);
+		signal IF_ID_Instructions :std_logic_vector (31 downto 0);
         SIGNAL regDst_s			: std_logic;
         SIGNAL jump_s			: std_logic;
         SIGNAL branch_s			: std_logic;
@@ -81,9 +81,8 @@ begin
 				MemWriteOut => memWrite,
 				PC => PC,
 				AluResult => AluResult,
-				WriteData => WriteData
+				WriteData => WriteData,
 				--sortie vers le controlleur
-				 IF_ID_Instructions=>IF_ID_Instructions;
-				);
+				IF_ID_Instruction_out =>IF_ID_Instructions);
 
 end cpu;
