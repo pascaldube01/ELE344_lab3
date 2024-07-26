@@ -48,14 +48,13 @@ signal pcJump:std_logic_vector(31 DOWNTO 0);
 signal signImmSh:std_logic_vector(31 DOWNTO 0);
 signal pcBranch: std_logic_vector(31 DOWNTO 0);
 signal pcSrc:std_logic;
-signal pcNextBr:std_logic_vector(31 DOWNTO 0);
 signal pcNext:std_logic_vector(31 DOWNTO 0);
 signal signal_pc:std_logic_vector(31 downto 0);
 
 
 
 --------------- signaux pour le pipelilne ----------
-SIGNAL IF_PCNextBr          : std_logic_vector(31 DOWNTO 0);
+SIGNAL IF_PCNextBr          : std_logic_vector(31 DOWNTO 0); --
 SIGNAL IF_PCNext            : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_PC                : std_logic_vector(31 DOWNTO 0);
 SIGNAL IF_PCPlus4           : std_logic_vector(31 DOWNTO 0);
@@ -160,6 +159,16 @@ begin
 end process;
 
 
+
+
+
+
+
+
+
+
+
+-------------- autres parties du processeur ----------------
 registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
 port map(
 	clk=>clock,
@@ -180,6 +189,13 @@ port map(
 	result=>ual_result,
 	zero=>ual_zero	
 );
+
+
+
+
+
+------------mux----------------------
+
 -------- mux du choix du registre cible
 process(RegDst,instruction)
 begin
@@ -211,20 +227,42 @@ end process;
 process(pcSrc,pcBranch,pcPlus4)
 begin
 	if pcSrc ='1' then
-		pcNextBr<=pcBranch;
+		IF_PCNextBr <=pcBranch;
 	else
-		pcNextBr<=pcPlus4;
+		IF_PCNextBr <=pcPlus4;
 	end if;
 end process;
 ------------- mux du choix entre adresse pc de jump ou pc next branch
-process(Jump,pcJump, pcNExtBr)
+process(Jump,pcJump, IF_PCNextBr )
 begin
 	if Jump ='1' then
 		pcNext<=pcJump;
 	else
-		pcNext<=pcNextBr;
+		pcNext<=IF_PCNextBr ;
 	end if;
 end process;
+
+
+
+
+
+
+
+
+
+
+--------registres inter-etages----------
+-- IF_ID
+-- ID_EX
+-- EX_MEM
+-- MEM_WB
+
+
+
+
+
+
+
 -------------bascule D d'entrée du compteur pc
 process(clock,reset)
 begin

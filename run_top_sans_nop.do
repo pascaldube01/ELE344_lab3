@@ -1,7 +1,7 @@
 vlib work
 
 vcom -93 -work work regfile.vhd
-vcom -93 -work work imem.vhd
+vcom -93 -work work imem_sans_nop.vhd
 vcom -93 -work work dmem.vhd
 vcom -93 -work work controlleur.vhd
 vcom -93 -work work ual.vhd
