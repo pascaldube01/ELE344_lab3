@@ -330,9 +330,17 @@ ID_RegWrite <= regWrite;
 process(clock)
 begin
 	if rising_edge(clock) then 
-	--controlleur vers EX
-	--controlleur vers MEM
-	--controlleur vers WB
+		--vers EX
+		ID_EX_Branch <= ID_Branch;
+		ID_EX_AluSrc <=ID_AluSrc;
+		ID_EX_aluControl <= ID_AluControl;
+		ID_EX_RegDst <=ID_RegDst;
+		--vers MEM
+		ID_EX_memWrite <= ID_MemWrite;
+		ID_EX <= memRead <= ID_MemRead;
+		--vers WB
+		ID_EX_memToReg <= ID_MemtoReg;
+		ID_EX_RegWrite <= ID_RegWrite;
 	end if;
 end process;
 
