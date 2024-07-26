@@ -333,13 +333,44 @@ end process;
 
 
 
+--------mux forwardA ----------
+process(EX_forwardA, WB_Result, ID_EX_rd1, EX_MEM_AluResult)
+	if(EX_forwardA = "10") then
+		EX_SrcA <= EX_MEM_AluResult;
+	elsif(EX_forwardA = "01") then
+		EX_SrcA <= WB_Result;
+	elsif(EX_forwardA = "00") then
+		EX_SrcA <= ID_EX_rd1;
+	end if;
+end process;
+
+
+
+--------mux forwardB ----------
+process(EX_forwardB, WB_Result, ID_EX_rd2, EX_MEM_AluResult)
+	if(EX_forwardB = "10") then
+		EX_preSrcB <= EX_MEM_AluResult;
+	elsif(EX_forwardB = "01") then
+		EX_preSrcB <= WB_Result;
+	elsif(EX_forwardB = "00") then
+		EX_preSrcB <= ID_EX_rd1;
+	end if;
+end process;
+
+
+
+
+
+
+--------mux forwardB ----------
+
 --------mux srcB -------------
-process(ID_EX_AluSrc,ID_EX_SignImm, EX_ForwardB)
+process(ID_EX_AluSrc,ID_EX_SignImm, EX_preSrcB)
 begin
 	if AluSrc ='1' then
-		ual_srcB<=signImm;
+		ual_srcB<=ID_EX_SignImm;
 	else
-		ual_srcB<=reg_rd2;
+		ual_srcB<=EX_preSrcB;
 	end if;
 end process;
 
