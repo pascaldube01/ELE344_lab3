@@ -19,9 +19,7 @@ use work.all;
 
 entity datapath is
     port(
-        clock,Reset,
-        
-        MemtoReg,Branch,AluSrc,RegDst,
+        clock,Reset,MemtoReg,Branch,AluSrc,RegDst,
 		RegWrite,Jump,MemReadIn,MemWriteIn: in std_logic;
         AluControl : in std_logic_vector(3 downto 0);
         
@@ -197,18 +195,6 @@ end process;
 
 
 
-------------mux----------------------
-
-
-----------mux du choix de l'arrivée de l'écriture de registre(de mémoire ou du résultat ual)
-process(MemtoReg,ReadData,ual_result)
-begin
-	if MemtoReg ='1' then
-		resultat<=ReadData;
-	else
-		resultat<=ual_result;
-	end if;
-end process;
 
 
 
@@ -327,11 +313,26 @@ begin
 		--vers WB
 		ID_EX_memToReg <= ID_MemtoReg;
 		ID_EX_RegWrite <= ID_RegWrite;
+
+
+
+		ID_EX_PCPlus4<=IF_ID_PCPlus4;
+		ID_EX_Branch<=ID_Branch;
+		ID_EX_rd1<=ID_rd1;
+		ID_EX_rd2<=ID_rd2;
+		
+		ID_EX_SignImm<=ID_SignImm;
+		ID_EX_rs<=ID_rs;
+		ID_EX_rt<=ID_rt;
+		ID_EX_rd<=ID_rd;
 	end if;
 end process;
 
 
-
+--logique combinatoire
+EX_SignImmSh<=ID_EX_SignImm &&'00';
+EX_pcSrc<=Branch AND  ual_zero; --selection de la source
+EX_PCBranch<=std_logic_vector(unsigned( IF_PCPlus4 ) + unsigned(signImmSh));
 
 --------mux forwardA ----------
 process(EX_forwardA, WB_Result, ID_EX_rd1, EX_MEM_AluResult)
@@ -362,8 +363,6 @@ end process;
 
 
 
---------mux forwardB ----------
-
 --------mux srcB -------------
 process(ID_EX_AluSrc,ID_EX_SignImm, EX_preSrcB)
 begin
@@ -389,7 +388,6 @@ end process;
 
 
 
-
 ----------------------------------------------------------------------
 ----------------------- MEM --------------------------------------------
 ----------------------------------------------------------------------
@@ -397,6 +395,10 @@ end process;
 process(clock)
 begin
 	if rising_edge(clock) then 
+		EX_MEM_MemRead<=ID_EX_MemRead;
+		EX_MEM_MemWrite<=ID_EX_MemWrite;
+		EX_MEM_preSrcB <= EX_preSrcB;
+		ID_EX_Branch<=ID_Branch
 	end if;
 end process;
 
@@ -405,8 +407,24 @@ end process;
 ----------------------------------------------------------------------
 --registre de transfer MEM_WB
 process(clock)
-begin
+begin 
 	if rising_edge(clock) then 
+	MEM_WB_RegWrite <=EX_MEM_RegWrite;
+	MEM_WB_MemtoReg<=EX_MEM_MemtoReg;
+	MEM_WB_AluResult<=EX_MEM_AluResult;
+	MEM_WB_WriteReg<=EX_MEM_WriteReg;
+	MEM_WB_readdata<=readData;
+	
+	
+	end if;
+end process;
+
+process(MEM_WB_readdata,MEM_WB_AluResult,MEM_WB_MemtoReg)
+	begin
+	if (MEM_WB_MemtoReg=='1') then
+	WB_Result<=MEM_WB_readdata;
+	else
+	WB_Result<=MEM_WB_AluResult;
 	end if;
 end process;
 
@@ -424,6 +442,8 @@ begin
 		IF_PC<=IF_PCNext;  
 	end if;
 end process;
+
+
 
 
 
