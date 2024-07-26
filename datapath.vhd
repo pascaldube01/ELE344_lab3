@@ -199,24 +199,7 @@ end process;
 
 ------------mux----------------------
 
--------- mux du choix du registre cible
-process(RegDst,instruction)
-begin
-	if RegDst ='1' then
-		reg_wa<=Instruction(15 downto 11);
-	else
-		reg_wa<=Instruction(20 downto 16);
-	end if;
-end process;
---------mux du choix entre mode registre ou immédiat
-process(AluSrc,signImm,reg_rd2)
-begin
-	if AluSrc ='1' then
-		ual_srcB<=signImm;
-	else
-		ual_srcB<=reg_rd2;
-	end if;
-end process;
+
 ----------mux du choix de l'arrivée de l'écriture de registre(de mémoire ou du résultat ual)
 process(MemtoReg,ReadData,ual_result)
 begin
@@ -326,6 +309,9 @@ ID_RegWrite <= regWrite;
 ----------------------------------------------------------------------
 ----------------------- EX --------------------------------------------
 ----------------------------------------------------------------------
+
+
+
 --registre de transfer ID_EX
 process(clock)
 begin
@@ -343,6 +329,30 @@ begin
 		ID_EX_RegWrite <= ID_RegWrite;
 	end if;
 end process;
+
+
+
+
+--------mux srcB -------------
+process(ID_EX_AluSrc,ID_EX_SignImm, EX_ForwardB)
+begin
+	if AluSrc ='1' then
+		ual_srcB<=signImm;
+	else
+		ual_srcB<=reg_rd2;
+	end if;
+end process;
+
+-------- mux writeREg
+process(ID_EX_RegDst, ID_EX_rt, ID_EX_rd )
+begin
+	if RegDst ='1' then
+		EX_WriteReg<=ID_EX_rt;
+	else
+		EX_WriteReg<=ID_EX_rd;
+	end if;
+end process;
+
 
 
 
@@ -384,16 +394,6 @@ begin
 	end if;
 end process;
 
-
-
-
-
-
-
-------------- opérations combinatoire pour le PC
- --addresse de branchement
-
-signImmSh<=std_logic_vector(resize(unsigned(signImm), 30)) &"00"; --offset de l'addresse (pour branchement)
 
 
 
