@@ -24,12 +24,13 @@ ENTITY mips IS
 			PC			: out std_logic_vector (31 downto 0);
 			WriteData	: out std_logic_vector (31 downto 0);
 			AluResult	: out std_logic_vector (31 downto 0)
+			
 		);
 end mips;
 
 architecture cpu of mips is
 
-
+		  signal IF_ID_Instructions :std_logic_vector (31 downto 0);
         SIGNAL regDst_s			: std_logic;
         SIGNAL jump_s			: std_logic;
         SIGNAL branch_s			: std_logic;
@@ -45,8 +46,8 @@ begin
 	--instanciation du controlleur
 	CONTROLLEUR : ENTITY work.controlleur(control)
 	PORT MAP (	--entrees provenant de l'exterieur
-				OP => Instruction (31 DOWNTO 26),
-				Funct => Instruction (5 DOWNTO 0),
+				OP => IF_ID_Instructions (31 DOWNTO 26),
+				Funct => IF_ID_Instructions (5 DOWNTO 0),
 				--sorties vers le datapath
 				regWrite => regWrite_s,
 				regDst => regDst_s,
@@ -81,6 +82,8 @@ begin
 				PC => PC,
 				AluResult => AluResult,
 				WriteData => WriteData
+				--sortie vers le controlleur
+				 IF_ID_Instructions=>IF_ID_Instructions;
 				);
 
 end cpu;
