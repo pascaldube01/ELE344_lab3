@@ -388,8 +388,11 @@ begin
 		EX_MEM_MemWrite<=ID_EX_MemWrite;
 		EX_MEM_preSrcB <= EX_preSrcB;
 		ID_EX_Branch<=ID_Branch;
-		
+		EX_MEM_Aluresult <= EX_Aluresult;
 		EX_MEM_instruction <= ID_EX_Instruction;
+		EX_MEM_WriteReg <= EX_WriteReg;
+		EX_MEM_RegWrite <= ID_EX_RegWrite;
+		EX_MEM_memToReg <= ID_EX_memToReg;
 	end if;
 end process;
 
