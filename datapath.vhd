@@ -204,7 +204,7 @@ end process;
 --loqique du PC
 IF_PCPlus4<=std_logic_vector(unsigned( IF_PC ) + 4); --incrementation de PC
 ID_PCJump<=(IF_ID_PCPlus4(31 downto 28) & (IF_ID_Instruction(25 downto 0) & "00")); --addresse de saut
-EX_pcSrc<=Branch AND  EX_Zero; --selection de la source
+EX_pcSrc<=ID_EX_Branch AND  EX_Zero; --selection de la source
 EX_PCBranch<=std_logic_vector(unsigned( ID_EX_PCPlus4 ) + unsigned(EX_SignImmSh));
 
 
@@ -223,7 +223,7 @@ end process;
 ------------- mux du choix entre adresse pc de jump ou pc next branch
 process(ID_Jump,ID_PCJump, IF_PCNextBr )
 begin
-	if Jump ='1' then
+	if ID_Jump ='1' then
 		IF_PCNext<=ID_PCJump;
 	else
 		IF_PCNext<=IF_PCNextBr ;
@@ -343,7 +343,7 @@ process(EX_forwardB, WB_Result, ID_EX_rd2, EX_MEM_AluResult)
 	elsif(EX_forwardB = "01") then
 		EX_preSrcB <= WB_Result;
 	elsif(EX_forwardB = "00") then
-		EX_preSrcB <= ID_EX_rd1;
+		EX_preSrcB <= ID_EX_rd2;
 	end if;
 end process;
 
@@ -355,7 +355,7 @@ end process;
 --------mux srcB -------------
 process(ID_EX_AluSrc,ID_EX_SignImm, EX_preSrcB)
 begin
-	if AluSrc ='1' then
+	if ID_EX_AluSrc ='1' then
 		EX_SrcB<=ID_EX_SignImm;
 	else
 		EX_SrcB<=EX_preSrcB;
@@ -365,10 +365,10 @@ end process;
 -------- mux writeREg
 process(ID_EX_RegDst, ID_EX_rt, ID_EX_rd )
 begin
-	if RegDst ='1' then
-		EX_WriteReg<=ID_EX_rt;
-	else
+	if ID_EX_RegDst ='1' then
 		EX_WriteReg<=ID_EX_rd;
+	else
+		EX_WriteReg<=ID_EX_rt;
 	end if;
 end process;
 
@@ -416,9 +416,9 @@ end process;
 process(MEM_WB_readdata,MEM_WB_AluResult,MEM_WB_MemtoReg)
 	begin
 	if (MEM_WB_MemtoReg ='1') then
-	WB_Result<=MEM_WB_readdata;
+		WB_Result<=MEM_WB_readdata;
 	else
-	WB_Result<=MEM_WB_AluResult;
+		WB_Result<=MEM_WB_AluResult;
 	end if;
 end process;
 

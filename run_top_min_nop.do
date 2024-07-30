@@ -10,7 +10,7 @@ vcom -93 -work work mips.vhd
 vcom -93 -work work top.vhd
 
 vsim top
-add wave -r -decimal *
+add wave -r -hexadecimal *
 force clk 1,0 10 ns -repeat 20 ns
 force reset 1,0 15 ns
 run 1000 ns
