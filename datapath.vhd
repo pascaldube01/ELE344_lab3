@@ -19,9 +19,9 @@ use work.all;
 
 entity datapath is
     port(
-        clock,Reset,MemtoReg,Branch,AluSrc,RegDst,
-		RegWrite,Jump,MemReadIn,MemWriteIn: in std_logic;
-        AluControl : in std_logic_vector(3 downto 0);
+        clock,Reset,IN_MemtoReg,IN_Branch,IN_AluSrc,IN_RegDst,
+		IN_RegWrite,IN_Jump,MemReadIn,MemWriteIn: in std_logic;
+        IN_AluControl : in std_logic_vector(3 downto 0);
         
         Instruction,ReadData : in std_logic_vector(31 downto 0);
 		  
@@ -120,7 +120,7 @@ begin
 registre : ENTITY work.RegFile(RegFile_arch)--création de l'entité banc de registres
 port map(
 	clk => clock,
-	we => RegWrite,
+	we => MEM_WB_RegWrite,
 	ra1 => ID_rs,
 	ra2 => ID_rt,
 	wa => MEM_WB_WriteReg,
@@ -262,18 +262,18 @@ end process;
 
 -- mise des signaux en entree vers leurs signaux interne respectifs
 --vers IF
-ID_Jump <= Jump;
+ID_Jump <= IN_Jump;
 --vers EX
-ID_Branch <= Branch;
-ID_AluSrc <= AluSrc;
-ID_AluControl <= AluControl;
-ID_RegDst <= regDst;
+ID_Branch <= IN_Branch;
+ID_AluSrc <= IN_AluSrc;
+ID_AluControl <= IN_AluControl;
+ID_RegDst <= IN_regDst;
 --vers MEM
 ID_MemWrite <= MemWriteIn;
 ID_MemRead <= MemReadIn;
 --vers WB
-ID_MemtoReg <= MemtoReg;
-ID_RegWrite <= regWrite;
+ID_MemtoReg <= IN_MemtoReg;
+ID_RegWrite <= IN_regWrite;
 
 
 
@@ -444,8 +444,8 @@ end process;
 
 
 --signaux vers d'autres parties du CPU (sorties)
-MemReadOut <= MemReadIn;
-MemWriteOut <= MemWriteIn;
+MemReadOut <= EX_MEM_MemRead;
+MemWriteOut <= EX_MEM_MemWrite;
 pc<= "00" & IF_PC(31 downto 2);
 AluResult <= EX_MEM_AluResult;
 WriteData<= EX_MEM_preSrcB;
