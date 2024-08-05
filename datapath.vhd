@@ -104,13 +104,27 @@ SIGNAL MEM_WB_AluResult     : std_logic_vector(31 DOWNTO 0);
 SIGNAL MEM_WB_readdata      : std_logic_vector(31 DOWNTO 0);
 SIGNAL MEM_WB_instruction   : std_logic_vector(31 DOWNTO 0);
 
+
+--signaux pour bonus a
+signal MEM_Stall				: std_logic;
+
 begin
 
+-- 
 
-
-
-
-
+--stall sera mis a 0 si on veut arreter l'execution pour 1 cycle dans le cas d'un LW ayant une destination qui est aussi une source dans la prochaine instruction
+stall : process(clock)
+begin
+	if  rising_edge(clock) then
+		if   ((ID_rt = EX_WriteReg) or (ID_rs = EX_WriteReg)) and ID_EX_MemRead = '1' then
+			MEM_Stall <= '0';
+		elsif MEM_Stall = '0' then
+			MEM_Stall <= '1';
+		else
+			MEM_Stall <= '1';
+		end if;
+	end if;
+end  process;
 
 
 
@@ -159,6 +173,13 @@ begin
 end process;
 
 
+
+
+
+
+
+
+
 --sortie B
 sortieB : process(EX_MEM_RegWrite, EX_MEM_WriteReg, ID_EX_rt, MEM_WB_RegWrite, MEM_WB_WriteReg)
 begin
@@ -197,7 +218,7 @@ end process;
 
 
 ----------------------------------------------------------------------
------------------------ IF --------------------------------------------
+----------------------- IF -------------------------------------------
 ----------------------------------------------------------------------
 
 
@@ -208,33 +229,20 @@ EX_pcSrc<=ID_EX_Branch AND  EX_Zero; --selection de la source
 EX_PCBranch<=std_logic_vector(unsigned( ID_EX_PCPlus4 ) + unsigned(EX_SignImmSh));
 
 
-
-
-
 ------------mux du choix branch ou pc+4
-process(EX_PCSrc,EX_PCBranch,IF_PCPlus4)
-begin
-	if EX_PCSrc ='1' then
-		IF_PCNextBr <= EX_PCBranch;
-	else
-		IF_PCNextBr <= IF_PCPlus4;
-	end if;
-end process;
+with EX_PCSrc select
+	IF_PCNextBr <=  EX_PCBranch when '1',
+					IF_PCPlus4 when others;
+
+
 ------------- mux du choix entre adresse pc de jump ou pc next branch
-process(ID_Jump,ID_PCJump, IF_PCNextBr )
-begin
-	if ID_Jump ='1' then
-		IF_PCNext<=ID_PCJump;
-	else
-		IF_PCNext<=IF_PCNextBr ;
-	end if;
-end process;
-
-
+with ID_Jump select
+	IF_PCNext <=	ID_PCJump when '1',
+					IF_PCNextBr when others;
 
 
 ----------------------------------------------------------------------
------------------------ ID --------------------------------------------
+----------------------- ID -------------------------------------------
 ----------------------------------------------------------------------
 
 
@@ -249,9 +257,9 @@ ID_SignImm<=std_logic_vector(resize(signed(IF_ID_Instruction(15 downto 0)), 32))
 
 
 --registre de transfer IF_ID
-process(clock)
+process(clock, MEM_Stall)
 begin
-	if rising_edge(clock) then 
+	if rising_edge(clock) and MEM_Stall = '1'then 
 	IF_ID_PCPlus4 <= IF_PCPlus4;
 	IF_ID_Instruction <=Instruction;
 	end if;
@@ -288,23 +296,24 @@ ID_RegWrite <= IN_regWrite;
 --registre de transfer ID_EX
 process(clock)
 begin
-	if rising_edge(clock) then 
+	if rising_edge(clock) and MEM_Stall = '1' then 
 		--vers EX
 		ID_EX_Branch <= ID_Branch;
 		ID_EX_AluSrc <=ID_AluSrc;
 		ID_EX_aluControl <= ID_AluControl;
 		ID_EX_RegDst <=ID_RegDst;
+		ID_EX_instruction <= IF_ID_Instruction;
 		--vers MEM
 		ID_EX_memWrite <= ID_MemWrite;
 		ID_EX_MemRead <= ID_MemRead;
 		--vers WB
 		ID_EX_memToReg <= ID_MemtoReg;
 		ID_EX_RegWrite <= ID_RegWrite;
+		
 
 
 
 		ID_EX_PCPlus4<=IF_ID_PCPlus4;
-		ID_EX_Branch<=ID_Branch;
 		ID_EX_rd1<=ID_rd1;
 		ID_EX_rd2<=ID_rd2;
 		
@@ -313,7 +322,7 @@ begin
 		ID_EX_rt<=ID_rt;
 		ID_EX_rd<=ID_rd;
 		
-		ID_EX_instruction <= IF_ID_Instruction;
+		
 	end if;
 end process;
 
@@ -321,34 +330,23 @@ end process;
 --logique combinatoire
 EX_SignImmSh <= std_logic_vector(resize(unsigned(ID_EX_SignImm),30)) & "00";
 
+
+
+
 --------mux forwardA ----------
-process(EX_forwardA, WB_Result, ID_EX_rd1, EX_MEM_AluResult)
-	begin
-	if(EX_forwardA = "10") then
-		EX_SrcA <= EX_MEM_AluResult;
-	elsif(EX_forwardA = "01") then
-		EX_SrcA <= WB_Result;
-	elsif(EX_forwardA = "00") then
-		EX_SrcA <= ID_EX_rd1;
-	end if;
-end process;
+with EX_ForwardA select
+	EX_SrcA <= 	EX_MEM_AluResult when "10",
+				WB_Result  when "01",
+				ID_EX_rd1 when others;
+
 
 
 
 --------mux forwardB ----------
-process(EX_forwardB, WB_Result, ID_EX_rd2, EX_MEM_AluResult)
-	begin
-	if(EX_forwardB = "10") then
-		EX_preSrcB <= EX_MEM_AluResult;
-	elsif(EX_forwardB = "01") then
-		EX_preSrcB <= WB_Result;
-	elsif(EX_forwardB = "00") then
-		EX_preSrcB <= ID_EX_rd2;
-	end if;
-end process;
-
-
-
+with EX_ForwardB select
+	EX_preSrcB <= 	EX_MEM_AluResult when "10",
+					WB_Result  when "01",
+					ID_EX_rd2 when others;
 
 
 
@@ -383,16 +381,20 @@ end process;
 --registre de transfer EX_MEM
 process(clock)
 begin
-	if rising_edge(clock) then 
+	if rising_edge(clock) and MEM_Stall = '1' then 
 		EX_MEM_MemRead<=ID_EX_MemRead;
 		EX_MEM_MemWrite<=ID_EX_MemWrite;
 		EX_MEM_preSrcB <= EX_preSrcB;
-		ID_EX_Branch<=ID_Branch;
 		EX_MEM_Aluresult <= EX_Aluresult;
 		EX_MEM_instruction <= ID_EX_Instruction;
 		EX_MEM_WriteReg <= EX_WriteReg;
 		EX_MEM_RegWrite <= ID_EX_RegWrite;
 		EX_MEM_memToReg <= ID_EX_memToReg;
+	elsif rising_edge(clock) and MEM_Stall = '0' then
+		EX_MEM_MemRead<= '0';
+		EX_MEM_MemWrite<= '0';
+		EX_MEM_RegWrite <= '0';
+		EX_MEM_memToReg <= '0';
 	end if;
 end process;
 
@@ -428,11 +430,11 @@ end process;
 
 
 -------------bascule D d'entrée du compteur pc
-process(clock,reset)
+process(clock,reset, MEM_Stall)
 begin
 	if reset = '1' then
 		IF_PC <=(others => '0');  
-	elsif rising_edge(clock) then
+	elsif rising_edge(clock) and MEM_Stall = '1'then
 		IF_PC<=IF_PCNext;  
 	end if;
 end process;
